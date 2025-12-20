@@ -121,9 +121,8 @@ public class PackageService
         process.ErrorDataReceived += (s, e) => { if (e.Data != null) OnLog?.Invoke(e.Data); };
 
         process.Start();
-        process.WaitForExit(); // Core logic might want to wait, or we can make it async later. synchronous for now as per previous implementation logic sort of.
-        // Actually, previous implementation used Process.Start and async read, but fired and forgot in UI.
-        // For a library, it's better to wait or return the process.
-        // Let's WaitForExit for simplicity in this refactor step, or user can wrap in Task.Run.
+        process.BeginOutputReadLine();
+        process.BeginErrorReadLine();
+        process.WaitForExit(); 
     }
 }

@@ -212,4 +212,9 @@ public partial class MainWindow : Window
         txtLog.AppendText($"{DateTime.Now:HH:mm:ss} {message}{Environment.NewLine}");
         txtLog.ScrollToEnd();
     }
+
+    private void BtnClearLog_Click(object sender, RoutedEventArgs e)
+    {
+        txtLog.Clear();
+    }
 }

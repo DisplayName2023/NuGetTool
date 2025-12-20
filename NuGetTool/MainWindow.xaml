@@ -68,9 +68,24 @@
             <Button Name="btnUpload" Content="Upload Package" Padding="10,5" Click="BtnUpload_Click"/>
         </StackPanel>
 
-        <!-- Log -->
-        <GroupBox Header="Log" Grid.Row="4">
-            <TextBox Name="txtLog" IsReadOnly="True" VerticalScrollBarVisibility="Auto" TextWrapping="Wrap" BorderThickness="0"/>
+        <!-- Log / Test Block -->
+        <GroupBox Grid.Row="4" Margin="0,5,0,0">
+            <GroupBox.Header>
+                <DockPanel>
+                    <TextBlock Text="Console Output" FontWeight="Bold" Foreground="#333"/>
+                    <Button Name="btnClearLog" Content="Clear" HorizontalAlignment="Right" Click="BtnClearLog_Click" Padding="10,0" Margin="10,0,0,0" Cursor="Hand"/>
+                </DockPanel>
+            </GroupBox.Header>
+            <TextBox Name="txtLog" 
+                     IsReadOnly="True" 
+                     VerticalScrollBarVisibility="Auto" 
+                     TextWrapping="Wrap" 
+                     BorderThickness="1"
+                     Background="Black" 
+                     Foreground="#00FF00" 
+                     FontFamily="Consolas" 
+                     FontSize="12"
+                     Padding="5"/>
         </GroupBox>
     </Grid>
 </Window>
