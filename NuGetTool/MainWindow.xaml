@@ -17,8 +17,9 @@
 
         <!-- Mode Selection -->
         <StackPanel Orientation="Horizontal" Grid.Row="0" Margin="0,0,0,10">
-            <RadioButton Name="rbNuspec" Content="Nuspec Mode" IsChecked="True" Checked="Mode_Checked" Margin="0,0,10,0"/>
-            <RadioButton Name="rbCsproj" Content="CSPROJ Mode" Checked="Mode_Checked"/>
+            <RadioButton Name="rbCsproj" Content="C# Project Mode" IsChecked="True" Checked="Mode_Checked"/>
+            <RadioButton Name="rbNuspec" Content="Nuspec Mode" IsChecked="False" Checked="Mode_Checked" Margin="0,0,10,0"/>
+            
         </StackPanel>
 
         <!-- Metadata Grid -->

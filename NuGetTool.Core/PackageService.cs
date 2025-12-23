@@ -41,7 +41,7 @@ public class PackageService
         var sb = new StringBuilder();
         sb.AppendLine("<Project Sdk=\"Microsoft.NET.Sdk\">");
         sb.AppendLine("  <PropertyGroup>");
-        sb.AppendLine("    <TargetFramework>net9.0</TargetFramework>");
+        sb.AppendLine("    <TargetFramework>net8.0</TargetFramework>");
         sb.AppendLine($"    <PackageId>{data.Id}</PackageId>");
         sb.AppendLine($"    <Version>{data.Version}</Version>");
         sb.AppendLine($"    <Authors>{(string.IsNullOrWhiteSpace(data.Authors) ? "Unknown" : data.Authors)}</Authors>");
