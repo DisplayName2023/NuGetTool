@@ -3,7 +3,9 @@
 @using NuGetTool.Core
 @using System.IO
 @using System.Linq
+@using NuGetTool.Web.Services
 @inject PackageService PackageService
+@inject MetadataService MetadataService
 @inject IJSRuntime JS
 @rendermode InteractiveServer
 
@@ -41,7 +43,13 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Content Files (one per line)</label>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <label class="mb-0">Content Files (one per line)</label>
+                        <button class="btn btn-sm btn-outline-light" @onclick="TriggerFileSelect">
+                            <i class="bi bi-folder2-open me-1"></i>Browse Files...
+                        </button>
+                    </div>
+                    <InputFile OnChange="HandleFileSelection" multiple class="d-none" id="fileInput" />
                     <textarea @bind="ContentFilesRaw" class="form-control-premium" rows="4" placeholder="C:\path\to\file.dll"></textarea>
                 </div>
 
@@ -128,6 +136,67 @@
     }
 
     private void ClearLogs() => Logs.Clear();
+
+    private async Task TriggerFileSelect()
+    {
+        await JS.InvokeVoidAsync("eval", "document.getElementById('fileInput').click()");
+    }
+
+    private async Task HandleFileSelection(InputFileChangeEventArgs e)
+    {
+        var packageId = string.IsNullOrWhiteSpace(Metadata.Id) ? "Unspecified" : Metadata.Id;
+        var uploadDir = Path.Combine(Path.GetTempPath(), "NuGetTool", packageId, "uploads");
+        Directory.CreateDirectory(uploadDir);
+
+        foreach (var file in e.GetMultipleFiles())
+        {
+            try
+            {
+                var filePath = Path.Combine(uploadDir, file.Name);
+                
+                await using var stream = file.OpenReadStream(maxAllowedSize: 1024 * 1024 * 50); // 50MB limit
+                await using var fs = new FileStream(filePath, FileMode.Create);
+                await stream.CopyToAsync(fs);
+
+                if (!string.IsNullOrWhiteSpace(ContentFilesRaw) && !ContentFilesRaw.EndsWith("\n"))
+                {
+                    ContentFilesRaw += "\n";
+                }
+                ContentFilesRaw += filePath;
+                Logs.Add($"Selected and uploaded: {file.Name}");
+
+                // Suggest defaults from the first file
+                await UpdateDefaultsFromFileInfo(file, filePath);
+            }
+            catch (Exception ex)
+            {
+                Logs.Add($"Error uploading {file.Name}: {ex.Message}");
+            }
+        }
+        StateHasChanged();
+    }
+
+    private async Task UpdateDefaultsFromFileInfo(IBrowserFile browserFile, string savedPath)
+    {
+        try
+        {
+            var (id, version) = await MetadataService.ExtractMetadataAsync(browserFile, savedPath);
+            
+            if (string.IsNullOrWhiteSpace(Metadata.Id))
+            {
+                Metadata.Id = id;
+            }
+
+            if (string.IsNullOrWhiteSpace(Metadata.Version))
+            {
+                Metadata.Version = version;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logs.Add($"Note: Could not extract detailed metadata: {ex.Message}");
+        }
+    }
 
     private async Task GenerateProject()
     {

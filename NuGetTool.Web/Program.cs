@@ -1,5 +1,6 @@
 using NuGetTool.Web.Components;
 using NuGetTool.Core;
+using NuGetTool.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,6 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddTransient<PackageService>();
+builder.Services.AddTransient<MetadataService>();
 
 var app = builder.Build();
 
