@@ -28,6 +28,16 @@ The Web version is the primary tool for modern workflows, featuring dynamic conf
 - **Automatic README**: Generates a `README.md` containing the file list if no description is provided, satisfying NuGet build requirements.
 - **Credential Storage**: Load defaults from environment variables (`GITLAB_PACKAGE_REGISTRY_URL`, `GITLAB_PACKAGE_REGISTRY_USER`, etc.) or save them in local storage.
 
+
+**defaults example**
+```                        
+export GITLAB_PACKAGE_REGISTRY_URL=http://gitlab.it.xxx.com/api/v4/projects/32/packages/nuget
+
+export GITLAB_PACKAGE_REGISTRY_PASSWORD=xxxxxxxxxx-password
+export GITLAB_PACKAGE_REGISTRY_USERNAME=xxxxxx-token-1
+```
+
+
 ---
 
 ## WPF Application (NuGetTool)
