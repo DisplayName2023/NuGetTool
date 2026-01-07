@@ -204,13 +204,15 @@ public class PackageService
         OnLog?.Invoke($"Running: {fileName} {arguments}");
         var startInfo = new ProcessStartInfo
         {
-            FileName = fileName,
-            Arguments = arguments,
+            FileName = "cmd.exe",
+            Arguments = $"/c chcp 65001 >nul && {fileName} {arguments}",
             WorkingDirectory = workingDir ?? "",
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
-            CreateNoWindow = true
+            CreateNoWindow = true,
+            StandardOutputEncoding = Encoding.UTF8,
+            StandardErrorEncoding = Encoding.UTF8
         };
 
         _currentProcess = new Process { StartInfo = startInfo };
