@@ -330,34 +330,36 @@
 
             string tempDir = Path.Combine(Path.GetTempPath(), "NuGetTool", Metadata.Id);
             // Locate the .nupkg file matching the current version
-            string expectedFileName = $"{Metadata.Id}.{Metadata.Version}.nupkg";
-            var matchingFiles = Directory.Exists(tempDir) 
-                ? Directory.GetFiles(tempDir, expectedFileName, SearchOption.AllDirectories) 
+            // Note: dotnet pack normalizes version numbers (removes leading zeros), so we search by pattern
+            string searchPattern = $"{Metadata.Id}.*.nupkg";
+            var allPackages = Directory.Exists(tempDir) 
+                ? Directory.GetFiles(tempDir, searchPattern, SearchOption.AllDirectories) 
                 : Array.Empty<string>();
+            
+            // Normalize version for comparison (remove leading zeros from each segment)
+            // Handle prerelease tags like "2022.12.23-alpha"
+            var versionParts = Metadata.Version.Split('-', 2);
+            var numericPart = string.Join(".", versionParts[0].Split('.').Select(s => int.TryParse(s, out var num) ? num.ToString() : s));
+            string normalizedVersion = versionParts.Length > 1 ? $"{numericPart}-{versionParts[1]}" : numericPart;
+            string expectedFileName = $"{Metadata.Id}.{normalizedVersion}.nupkg";
+            
+            var matchingFiles = allPackages.Where(f => Path.GetFileName(f).Equals(expectedFileName, StringComparison.OrdinalIgnoreCase)).ToArray();
             
             if (matchingFiles.Length == 0)
             {
-                Logs.Add($"No .nupkg file found for version {Metadata.Version}. Expected: {expectedFileName}");
+                Logs.Add($"No .nupkg file found for version {Metadata.Version} (normalized: {normalizedVersion}).");
                 // List all available .nupkg files in the directory
-                if (Directory.Exists(tempDir))
+                if (allPackages.Length > 0)
                 {
-                    var availableFiles = Directory.GetFiles(tempDir, "*.nupkg", SearchOption.AllDirectories);
-                    if (availableFiles.Length > 0)
+                    Logs.Add("Available packages:");
+                    foreach (var file in allPackages)
                     {
-                        Logs.Add("Available packages:");
-                        foreach (var file in availableFiles)
-                        {
-                            Logs.Add($"  - {Path.GetFileName(file)}");
-                        }
-                    }
-                    else
-                    {
-                        Logs.Add("No .nupkg files found in the temp directory. Please build the package first.");
+                        Logs.Add($"  - {Path.GetFileName(file)}");
                     }
                 }
                 else
                 {
-                    Logs.Add("Temp directory does not exist. Please build the package first.");
+                    Logs.Add("No .nupkg files found in the temp directory. Please build the package first.");
                 }
                 return;
             }
