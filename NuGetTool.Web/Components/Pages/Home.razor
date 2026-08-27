@@ -49,7 +49,7 @@
                             <i class="bi bi-folder2-open me-1"></i>Browse Files...
                         </button>
                     </div>
-                    <InputFile OnChange="HandleFileSelection" multiple class="d-none" id="fileInput" />
+                    <InputFile OnChange="HandleFileSelection" multiple="multiple" class="d-none" id="fileInput" />
                     <textarea @bind="ContentFilesRaw" class="form-control-premium" rows="4" placeholder="C:\path\to\file.dll"></textarea>
                 </div>
 
@@ -212,38 +212,104 @@
         await JS.InvokeVoidAsync("eval", "document.getElementById('fileInput').click()");
     }
 
+    private const int MaxFileCount = 1000;
+    private const long MaxFileSize = 1024L * 1024L * 200L; // 200MB per file
+
     private async Task HandleFileSelection(InputFileChangeEventArgs e)
     {
         var packageId = string.IsNullOrWhiteSpace(Metadata.Id) ? "Unspecified" : Metadata.Id;
         var uploadDir = Path.Combine(Path.GetTempPath(), "NuGetTool", packageId, "uploads");
         Directory.CreateDirectory(uploadDir);
 
-        foreach (var file in e.GetMultipleFiles())
+        IReadOnlyList<IBrowserFile> files;
+        try
         {
+            files = e.GetMultipleFiles(MaxFileCount);
+        }
+        catch (InvalidOperationException ex)
+        {
+            Logs.Add($"Too many files selected (max {MaxFileCount}): {ex.Message}");
+            StateHasChanged();
+            return;
+        }
+
+        Logs.Add($"Processing {files.Count} file(s)...");
+        bool isFirstFile = true;
+        int successCount = 0;
+        int skippedCount = 0;
+
+        foreach (var file in files)
+        {
+            // Pre-check size before opening the stream so the user gets a clear error.
+            if (file.Size > MaxFileSize)
+            {
+                Logs.Add($"Skipped '{file.Name}': size {FormatBytes(file.Size)} exceeds limit of {FormatBytes(MaxFileSize)}.");
+                skippedCount++;
+                continue;
+            }
+
+            var filePath = Path.Combine(uploadDir, file.Name);
             try
             {
-                var filePath = Path.Combine(uploadDir, file.Name);
-                
-                await using var stream = file.OpenReadStream(maxAllowedSize: 1024 * 1024 * 50); // 50MB limit
-                await using var fs = new FileStream(filePath, FileMode.Create);
-                await stream.CopyToAsync(fs);
+                await using (var stream = file.OpenReadStream(maxAllowedSize: MaxFileSize))
+                await using (var fs = new FileStream(filePath, FileMode.Create))
+                {
+                    await stream.CopyToAsync(fs);
+                }
 
                 if (!string.IsNullOrWhiteSpace(ContentFilesRaw) && !ContentFilesRaw.EndsWith("\n"))
                 {
                     ContentFilesRaw += "\n";
                 }
                 ContentFilesRaw += filePath;
-                Logs.Add($"Selected and uploaded: {file.Name}");
+                Logs.Add($"Selected and uploaded: {file.Name} ({FormatBytes(file.Size)})");
+                successCount++;
 
-                // Suggest defaults from the first file
-                await UpdateDefaultsFromFileInfo(file, filePath);
+                // Suggest defaults only from the first successfully uploaded file
+                if (isFirstFile)
+                {
+                    await UpdateDefaultsFromFileInfo(file, filePath);
+                    isFirstFile = false;
+                }
+            }
+            catch (IOException ex) when (ex.Message.Contains("exceeds the maximum", StringComparison.OrdinalIgnoreCase))
+            {
+                Logs.Add($"Skipped '{file.Name}': size exceeds limit of {FormatBytes(MaxFileSize)}.");
+                skippedCount++;
+                TryDeletePartialFile(filePath);
             }
             catch (Exception ex)
             {
                 Logs.Add($"Error uploading {file.Name}: {ex.Message}");
+                skippedCount++;
+                TryDeletePartialFile(filePath);
             }
         }
+
+        Logs.Add($"Done. Uploaded: {successCount}, Skipped/Failed: {skippedCount}.");
         StateHasChanged();
+    }
+
+    private static void TryDeletePartialFile(string path)
+    {
+        try
+        {
+            if (File.Exists(path)) File.Delete(path);
+        }
+        catch { }
+    }
+
+    private static string FormatBytes(long bytes)
+    {
+        string[] units = { "B", "KB", "MB", "GB", "TB" };
+        double value = bytes;
+        int unit = 0;
+        while (value >= 1024 && unit < units.Length - 1)
+        {
+            value /= 1024;
+            unit++;
+        }
+        return $"{value:0.##} {units[unit]}";
     }
 
     private async Task UpdateDefaultsFromFileInfo(IBrowserFile browserFile, string savedPath)

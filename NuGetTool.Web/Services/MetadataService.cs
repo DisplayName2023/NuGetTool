@@ -34,7 +34,7 @@ public class MetadataService
         // 3. Fallback to Browser's LastModified date if version is still empty
         if (string.IsNullOrWhiteSpace(version))
         {
-            version = browserFile.LastModified.ToString("yyyy.MM.dd");
+            version = browserFile.LastModified.ToString("yyyy.M.d");
         }
 
         return (id, version);
@@ -66,10 +66,10 @@ public class MetadataService
                 var match = Regex.Match(content, pattern);
                 if (match.Success)
                 {
-                    // Try to parse it to a standard yyyy.MM.dd format
+                    // Try to parse it to a standard yyyy.M.d format
                     if (DateTime.TryParse(match.Value, out var dt))
                     {
-                        return dt.ToString("yyyy.MM.dd");
+                        return dt.ToString("yyyy.M.d");
                     }
                 }
             }

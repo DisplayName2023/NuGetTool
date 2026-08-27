@@ -88,7 +88,7 @@ public partial class MainWindow : Window
             }
             if (string.IsNullOrWhiteSpace(txtVersion.Text))
             {
-                txtVersion.Text = info.LastWriteTime.ToString("yyyy.MM.dd");
+                txtVersion.Text = info.LastWriteTime.ToString("yyyy.M.d");
             }
         }
     }
